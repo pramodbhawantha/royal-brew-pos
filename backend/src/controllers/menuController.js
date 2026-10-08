@@ -1,6 +1,8 @@
 const pool = require("../config/db");
 
-// Get all menu items
+// =========================
+// GET ALL MENU ITEMS
+// =========================
 const getMenuItems = async (req, res) => {
   try {
     const [rows] = await pool.query(`
@@ -29,10 +31,20 @@ const getMenuItems = async (req, res) => {
   }
 };
 
-// Get one menu item
+// =========================
+// GET ONE MENU ITEM
+// =========================
 const getMenuItemById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const menuItemId = Number(id);
+
+    if (!Number.isInteger(menuItemId) || menuItemId <= 0) {
+      return res.status(400).json({
+        message: "Invalid menu item ID"
+      });
+    }
 
     const [rows] = await pool.query(
       `
@@ -50,7 +62,7 @@ const getMenuItemById = async (req, res) => {
         ON menu_items.category_id = categories.id
       WHERE menu_items.id = ?
       `,
-      [id]
+      [menuItemId]
     );
 
     if (rows.length === 0) {
@@ -69,7 +81,9 @@ const getMenuItemById = async (req, res) => {
   }
 };
 
-// Create menu item
+// =========================
+// CREATE MENU ITEM
+// =========================
 const createMenuItem = async (req, res) => {
   try {
     const {
@@ -79,9 +93,52 @@ const createMenuItem = async (req, res) => {
       price
     } = req.body;
 
-    if (!category_id || !name || price === undefined) {
+    const categoryId = Number(category_id);
+    const itemName = typeof name === "string" ? name.trim() : "";
+    const itemDescription =
+      typeof description === "string" ? description.trim() : "";
+    const itemPrice = Number(price);
+
+    // Validation
+    if (!Number.isInteger(categoryId) || categoryId <= 0) {
       return res.status(400).json({
-        message: "Category, name and price are required"
+        message: "Valid category_id is required"
+      });
+    }
+
+    if (!itemName || itemName.length > 150) {
+      return res.status(400).json({
+        message: "Name is required and must be 150 characters or less"
+      });
+    }
+
+    if (!Number.isFinite(itemPrice) || itemPrice <= 0) {
+      return res.status(400).json({
+        message: "Price must be a valid number greater than 0"
+      });
+    }
+
+    // Check category exists
+    const [categories] = await pool.query(
+      "SELECT id FROM categories WHERE id = ?",
+      [categoryId]
+    );
+
+    if (categories.length === 0) {
+      return res.status(400).json({
+        message: "Category not found"
+      });
+    }
+
+    // Check duplicate menu item name
+    const [existingItems] = await pool.query(
+      "SELECT id FROM menu_items WHERE name = ?",
+      [itemName]
+    );
+
+    if (existingItems.length > 0) {
+      return res.status(409).json({
+        message: "Menu item name already exists"
       });
     }
 
@@ -91,13 +148,19 @@ const createMenuItem = async (req, res) => {
       (category_id, name, description, price)
       VALUES (?, ?, ?, ?)
       `,
-      [category_id, name, description || null, price]
+      [
+        categoryId,
+        itemName,
+        itemDescription || null,
+        itemPrice
+      ]
     );
 
     res.status(201).json({
       message: "Menu item created successfully",
       id: result.insertId
     });
+
   } catch (error) {
     console.error("Create menu item error:", error.message);
 
@@ -107,10 +170,14 @@ const createMenuItem = async (req, res) => {
   }
 };
 
-// Update menu item
+// =========================
+// UPDATE MENU ITEM
+// =========================
 const updateMenuItem = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const menuItemId = Number(id);
 
     const {
       category_id,
@@ -120,11 +187,92 @@ const updateMenuItem = async (req, res) => {
       is_available
     } = req.body;
 
-    if (!category_id || !name || price === undefined) {
+    const categoryId = Number(category_id);
+    const itemName = typeof name === "string" ? name.trim() : "";
+    const itemDescription =
+      typeof description === "string" ? description.trim() : "";
+    const itemPrice = Number(price);
+
+    // Validate ID
+    if (!Number.isInteger(menuItemId) || menuItemId <= 0) {
       return res.status(400).json({
-        message: "Category, name and price are required"
+        message: "Invalid menu item ID"
       });
     }
+
+    // Validate category
+    if (!Number.isInteger(categoryId) || categoryId <= 0) {
+      return res.status(400).json({
+        message: "Valid category_id is required"
+      });
+    }
+
+    // Validate name
+    if (!itemName || itemName.length > 150) {
+      return res.status(400).json({
+        message: "Name is required and must be 150 characters or less"
+      });
+    }
+
+    // Validate price
+    if (!Number.isFinite(itemPrice) || itemPrice <= 0) {
+      return res.status(400).json({
+        message: "Price must be a valid number greater than 0"
+      });
+    }
+
+    // Validate availability
+    if (
+      is_available !== undefined &&
+      typeof is_available !== "boolean" &&
+      is_available !== 0 &&
+      is_available !== 1
+    ) {
+      return res.status(400).json({
+        message: "is_available must be true or false"
+      });
+    }
+
+    // Check menu item exists
+    const [existingItem] = await pool.query(
+      "SELECT id FROM menu_items WHERE id = ?",
+      [menuItemId]
+    );
+
+    if (existingItem.length === 0) {
+      return res.status(404).json({
+        message: "Menu item not found"
+      });
+    }
+
+    // Check category exists
+    const [categories] = await pool.query(
+      "SELECT id FROM categories WHERE id = ?",
+      [categoryId]
+    );
+
+    if (categories.length === 0) {
+      return res.status(400).json({
+        message: "Category not found"
+      });
+    }
+
+    // Check duplicate name
+    const [duplicateItems] = await pool.query(
+      "SELECT id FROM menu_items WHERE name = ? AND id != ?",
+      [itemName, menuItemId]
+    );
+
+    if (duplicateItems.length > 0) {
+      return res.status(409).json({
+        message: "Another menu item already uses this name"
+      });
+    }
+
+    const availability =
+      is_available === undefined
+        ? true
+        : Boolean(is_available);
 
     const [result] = await pool.query(
       `
@@ -138,12 +286,12 @@ const updateMenuItem = async (req, res) => {
       WHERE id = ?
       `,
       [
-        category_id,
-        name,
-        description || null,
-        price,
-        is_available ?? true,
-        id
+        categoryId,
+        itemName,
+        itemDescription || null,
+        itemPrice,
+        availability,
+        menuItemId
       ]
     );
 
@@ -156,6 +304,7 @@ const updateMenuItem = async (req, res) => {
     res.status(200).json({
       message: "Menu item updated successfully"
     });
+
   } catch (error) {
     console.error("Update menu item error:", error.message);
 
@@ -165,14 +314,24 @@ const updateMenuItem = async (req, res) => {
   }
 };
 
-// Delete menu item
+// =========================
+// DELETE MENU ITEM
+// =========================
 const deleteMenuItem = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const menuItemId = Number(id);
+
+    if (!Number.isInteger(menuItemId) || menuItemId <= 0) {
+      return res.status(400).json({
+        message: "Invalid menu item ID"
+      });
+    }
+
     const [result] = await pool.query(
       "DELETE FROM menu_items WHERE id = ?",
-      [id]
+      [menuItemId]
     );
 
     if (result.affectedRows === 0) {
@@ -184,6 +343,7 @@ const deleteMenuItem = async (req, res) => {
     res.status(200).json({
       message: "Menu item deleted successfully"
     });
+
   } catch (error) {
     console.error("Delete menu item error:", error.message);
 
