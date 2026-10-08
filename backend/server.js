@@ -7,7 +7,7 @@ const morgan = require("morgan");
 
 const pool = require("./src/config/db");
 const menuRoutes = require("./src/routes/menuRoutes");
-
+const authRoutes = require("./src/routes/authRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -17,6 +17,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(morgan("dev"));
 app.use("/api/menu", menuRoutes);
+app.use("/api/auth", authRoutes);
 
 // Basic API test route
 app.get("/", (req, res) => {
