@@ -9,6 +9,7 @@ const logger = require("./src/utils/logger");
 const pool = require("./src/config/db");
 const menuRoutes = require("./src/routes/menuRoutes");
 const authRoutes = require("./src/routes/authRoutes");
+const orderRoutes = require("./src/routes/orderRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use(morgan("dev"));
 app.use("/api/menu", menuRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/orders", orderRoutes);
 
 // Basic API test route
 app.get("/", (req, res) => {
