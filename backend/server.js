@@ -4,6 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const logger = require("./src/utils/logger");
 
 const pool = require("./src/config/db");
 const menuRoutes = require("./src/routes/menuRoutes");
@@ -45,7 +46,6 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Start server
 app.listen(PORT, () => {
-  console.log(`Royal Brew POS backend running on http://localhost:${PORT}`);
+  logger.info(`Royal Brew POS backend running on http://localhost:${PORT}`);
 });

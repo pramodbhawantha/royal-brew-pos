@@ -1,6 +1,7 @@
 const pool = require("../config/db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const logger = require("../utils/logger");
 
 // =========================
 // REGISTER USER
@@ -23,10 +24,10 @@ const register = async (req, res) => {
         }
 
         if (password.length < 6) {
-            return res.status(400).json({
-                message: "Password must be at least 6 characters"
-            });
-        }
+    return res.status(400).json({
+        message: "Password must be at least 6 characters"
+    });
+}
 
         const normalizedEmail = email.trim().toLowerCase();
         const normalizedName = name.trim();
@@ -76,6 +77,9 @@ const register = async (req, res) => {
                 hashedPassword
             ]
         );
+        logger.info("User registered successfully", {
+  userId: result.insertId
+});
 
         res.status(201).json({
             message: "User registered successfully",
@@ -84,8 +88,9 @@ const register = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Register error:", error.message);
-
+       logger.error("Registration error", {
+  error: error.message
+});
         res.status(500).json({
             message: "Server error during registration"
         });
@@ -123,19 +128,25 @@ const login = async (req, res) => {
         );
 
         if (users.length === 0) {
-            return res.status(401).json({
-                message: "Invalid email or password"
-            });
-        }
+    logger.warn("Login failed: account not found");
+
+    return res.status(401).json({
+        message: "Invalid email or password"
+    });
+}
 
         const user = users[0];
 
         // Check active status
         if (!user.is_active) {
-            return res.status(403).json({
-                message: "User account is inactive"
-            });
-        }
+    logger.warn("Login failed: inactive account", {
+        userId: user.id
+    });
+
+    return res.status(403).json({
+        message: "User account is inactive"
+    });
+}
 
         // Compare password
         const passwordMatch = await bcrypt.compare(
@@ -144,10 +155,12 @@ const login = async (req, res) => {
         );
 
         if (!passwordMatch) {
-            return res.status(401).json({
-                message: "Invalid email or password"
-            });
-        }
+    logger.warn("Login failed: incorrect password");
+
+    return res.status(401).json({
+        message: "Invalid email or password"
+    });
+}
 
         // Create JWT token
         const token = jwt.sign(
@@ -161,6 +174,10 @@ const login = async (req, res) => {
                 expiresIn: "8h"
             }
         );
+        logger.info("User login successful", {
+  userId: user.id,
+  role: user.role
+});
 
         res.json({
             message: "Login successful",
@@ -174,7 +191,9 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Login error:", error.message);
+        logger.error("Login error", {
+  error: error.message
+});
 
         res.status(500).json({
             message: "Server error during login"

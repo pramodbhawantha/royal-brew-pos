@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const logger = require("../utils/logger");
 
 // =========================
 // GET ALL MENU ITEMS
@@ -155,6 +156,9 @@ const createMenuItem = async (req, res) => {
         itemPrice
       ]
     );
+    logger.info("Menu item created successfully", {
+  menuItemId: result.insertId
+});
 
     res.status(201).json({
       message: "Menu item created successfully",
@@ -162,8 +166,9 @@ const createMenuItem = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Create menu item error:", error.message);
-
+    logger.error("Create menu item error", {
+  error: error.message
+});
     res.status(500).json({
       message: "Failed to create menu item"
     });
@@ -300,14 +305,18 @@ const updateMenuItem = async (req, res) => {
         message: "Menu item not found"
       });
     }
+    logger.info("Menu item updated successfully", {
+  menuItemId
+});
 
     res.status(200).json({
       message: "Menu item updated successfully"
     });
 
   } catch (error) {
-    console.error("Update menu item error:", error.message);
-
+    logger.error("Update menu item error", {
+  error: error.message
+});
     res.status(500).json({
       message: "Failed to update menu item"
     });
@@ -339,13 +348,18 @@ const deleteMenuItem = async (req, res) => {
         message: "Menu item not found"
       });
     }
+    logger.info("Menu item deleted successfully", {
+  menuItemId
+});
 
     res.status(200).json({
       message: "Menu item deleted successfully"
     });
 
   } catch (error) {
-    console.error("Delete menu item error:", error.message);
+    logger.error("Delete menu item error", {
+  error: error.message
+});
 
     res.status(500).json({
       message: "Failed to delete menu item"
