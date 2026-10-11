@@ -5,6 +5,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const logger = require("./src/utils/logger");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./src/config/swagger");
 
 const pool = require("./src/config/db");
 const menuRoutes = require("./src/routes/menuRoutes");
@@ -19,6 +21,7 @@ app.use(cors());
 app.use(helmet());
 app.use(express.json());
 app.use(morgan("dev"));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/menu", menuRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
