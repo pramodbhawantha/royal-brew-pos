@@ -13,6 +13,7 @@ const menuRoutes = require("./src/routes/menuRoutes");
 const authRoutes = require("./src/routes/authRoutes");
 const orderRoutes = require("./src/routes/orderRoutes");
 const reportRoutes = require("./src/routes/reportRoutes");
+const categoryRoutes = require("./src/routes/categoryRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -26,6 +27,7 @@ app.use("/api/menu", menuRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // Basic API test route
 app.get("/", (req, res) => {
